@@ -1,7 +1,4 @@
-"""Rebuild the article figures/tables directly from the archived experimental CSV logs.
 
-This script never simulates or fabricates observations.
-"""
 from pathlib import Path
 import sys
 import numpy as np
