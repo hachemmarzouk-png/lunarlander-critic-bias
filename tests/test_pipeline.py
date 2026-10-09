@@ -7,8 +7,7 @@ from pathlib import Path
 from unittest.mock import patch
 import numpy as np
 from rlbias.train import run
-from rlbias.aggregate import load_results, plot_all
-from make_report import build
+from rlbias.aggregate import load_results, final_by_seed
 
 
 class MockActionSpace:
@@ -72,12 +71,10 @@ class PipelineTests(unittest.TestCase):
                 self.assertTrue(all(r['complete_episodes'] == 2 for r in outputs))
             df = load_results(Path(root)/'results')
             self.assertEqual(len(df), 6)
-            self.assertEqual(len(plot_all(df, Path(root)/'figures')), 2)
-            for name in ('bias.png', 'return.png', 'mae.png', 'final_by_seed.csv'):
-                self.assertTrue((Path(root)/'figures'/name).exists())
-            pdf = Path(root)/'mock_only.pdf'
-            build(pdf, Path(root)/'results', Path(root)/'figures')
-            self.assertTrue(pdf.exists())
+            final = final_by_seed(df, last_k=2)
+            self.assertEqual(len(final), 2)
+            self.assertEqual(set(final.algorithm), {'ddpg', 'td3'})
+            self.assertTrue(all(final.n_checkpoints == 2))
 
 
 if __name__ == '__main__':

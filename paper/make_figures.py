@@ -117,27 +117,29 @@ for name,a,b,c in rows: lines.append(f'{name} & {a} & {b} & {c} \\\\')
 lines += [r'\bottomrule',r'\end{tabular}']
 (OUT/'table_results_revised.tex').write_text('\n'.join(lines))
 
-# Groupwise contrasts: same numeric seed is not a valid paired observation.
-contrasts=[('TD3 − DDPG, sans LN',('td3','no'),('ddpg','no')),
-           ('LN sur DDPG',('ddpg','yes'),('ddpg','no')),
-           ('LN sur TD3',('td3','yes'),('td3','no'))]
-lines=[r'\begin{tabular}{@{}lrrrr@{}}',r'\toprule',
-       r'\textbf{Contraste} & $\Delta$ retour & $p$ & $\Delta$ biais & $p$ \\',r'\midrule']
-for name,aa,bb in contrasts:
-    vals=[]
-    for key in ['mean_return','q1_bias']:
-        a=final[(final.algorithm==aa[0]) & (final.layer_norm==aa[1])][key].to_numpy(float)
-        b=final[(final.algorithm==bb[0]) & (final.layer_norm==bb[1])][key].to_numpy(float)
-        diff=a.mean()-b.mean()
-        p_exact=permutation_pvalue(a,b)
-        vals.extend([f'${latex_num(diff,0,True)}$', '$'+f'{p_exact:.3f}'.replace('.',r'{,}')+'$'])
-    lines.append(f'{name} & '+ ' & '.join(vals)+r' \\')
-lines += [r'\bottomrule',r'\end{tabular}']
-(OUT/'table_contrasts_revised.tex').write_text('\n'.join(lines))
+# Compare the two groups separately for each outcome: one p-value per table row.
+contrasts = [
+    ('DDPG', 'TD3', ('ddpg', 'no'), ('td3', 'no')),
+    ('DDPG', 'DDPG+LN', ('ddpg', 'no'), ('ddpg', 'yes')),
+    ('TD3', 'TD3+LN', ('td3', 'no'), ('td3', 'yes')),
+]
+lines = [r'\begin{tabular}{@{}llrr@{}}', r'\toprule',
+         r'\textbf{Comparaison (avant $\to$ après)} & \textbf{Mesure} & \textbf{Différence} & $\boldsymbol p$ \\',
+         r'\midrule']
+for before_name, after_name, before, after in contrasts:
+    for index, (metric, outcome) in enumerate([('mean_return', 'Retour'), ('q1_bias', 'Biais')]):
+        first = final[(final.algorithm == before[0]) & (final.layer_norm == before[1])][metric].to_numpy(float)
+        second = final[(final.algorithm == after[0]) & (final.layer_norm == after[1])][metric].to_numpy(float)
+        delta = second.mean() - first.mean()
+        p_value = permutation_pvalue(first, second)
+        comparison = f'{before_name} $\\to$ {after_name}' if index == 0 else ''
+        lines.append(f'{comparison} & {outcome} & ${latex_num(delta, 0, True)}$ & '
+                     + '$' + f'{p_value:.3f}'.replace('.', r'{,}') + r'$ \\')
+lines += [r'\bottomrule', r'\end{tabular}']
+(OUT / 'table_contrasts_revised.tex').write_text('\n'.join(lines))
 # The 10 additional runs are kept separate from the primary 2x2 design.
 ablation_order=[('no','Sans LN'),('actor','LN actor seul'),('critic','LN critic seul'),('yes','LN actor + critic')]
 ablation=all_final[all_final.algorithm=='ddpg'].copy()
-ablation.to_csv(BASE/'figures'/'ablation_by_seed.csv', index=False)
 lines=[r'\begin{tabular}{@{}lrr@{}}',r'\toprule',
        r'\textbf{DDPG} & \textbf{Retour} & \textbf{Biais $Q_1-G$} \\',r'\midrule']
 for ln,name in ablation_order:
@@ -149,14 +151,4 @@ for ln,name in ablation_order:
     lines.append(f'{name} & '+ ' & '.join(vals)+r' \\')
 lines += [r'\bottomrule',r'\end{tabular}']
 (OUT/'table_ablation_revised.tex').write_text('\n'.join(lines))
-comparison=[('actor','no'),('critic','no'),('critic','actor'),('yes','critic')]
-rows=[]
-for a,b in comparison:
-    x=ablation[ablation.layer_norm==a]; y=ablation[ablation.layer_norm==b]
-    row={'a':a,'b':b}
-    for col in ['q1_bias','mean_return']:
-        row[f'{col}_difference']=x[col].mean()-y[col].mean()
-        row[f'{col}_p']=permutation_pvalue(x[col].to_numpy(),y[col].to_numpy())
-    rows.append(row)
-pd.DataFrame(rows).to_csv(BASE/'figures'/'ablation_contrasts.csv',index=False)
-print('30 observed runs: main 2x2 + DDPG actor-only/critic-only ablation; charts and contrasts generated.')
+print('All 30 runs loaded; article figures and tables regenerated.')

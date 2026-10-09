@@ -132,18 +132,29 @@ class AlgorithmTests(unittest.TestCase):
         self.assertAlmostEqual(row["q1_bias"], 3 - (2.71 + 1.9) / 2)
 
 class StatsTests(unittest.TestCase):
-    def test_factorial_contrasts(self):
-        import pandas as pd
-        from rlbias.aggregate import factorial_effects
-        means = {("ddpg", "no"): 10., ("ddpg", "yes"): 6., ("td3", "no"): 2., ("td3", "yes"): 1.}
-        rows = [{"algorithm": a, "layer_norm": l, "seed": s, "q1_bias": m,
-                 "q1_rel_bias": m, "q1_mae": m, "mean_return": m}
-                for (a, l), m in means.items() for s in range(3)]
-        eff = factorial_effects(pd.DataFrame(rows), np.random.default_rng(0), n_boot=200)
-        get = lambda c: float(eff[(eff.metric == "q1_bias") & (eff.contrast == c)].estimate.iloc[0])
-        self.assertAlmostEqual(get("TD3 - DDPG (moyenne sur LN)"), (2 + 1 - 10 - 6) / 2)
-        self.assertAlmostEqual(get("LN - sans LN (moyenne sur algo)"), (6 + 1 - 10 - 2) / 2)
-        self.assertAlmostEqual(get("Interaction algo x LN"), (1 - 2) - (6 - 10))
+    def test_exact_permutation_test(self):
+        from rlbias.aggregate import permutation_pvalue
+        # Complete separation between two independent groups of five.
+        self.assertAlmostEqual(permutation_pvalue([1, 2, 3, 4, 5], [6, 7, 8, 9, 10]), 2 / 252)
+
+    def test_archived_experiments(self):
+        from pathlib import Path
+        from rlbias.aggregate import load_results, final_by_seed, permutation_pvalue
+        data = final_by_seed(load_results(Path(__file__).resolve().parents[1] / "results"))
+        self.assertEqual(len(data), 30)
+
+        def values(algorithm, ln, metric):
+            return data[(data.algorithm == algorithm) & (data.layer_norm == ln)][metric].to_numpy()
+
+        p_td3 = permutation_pvalue(values("td3", "no", "mean_return"),
+                                   values("ddpg", "no", "mean_return"))
+        p_ln = permutation_pvalue(values("td3", "yes", "mean_return"),
+                                  values("td3", "no", "mean_return"))
+        p_ablation = permutation_pvalue(values("ddpg", "yes", "q1_bias"),
+                                       values("ddpg", "critic", "q1_bias"))
+        self.assertAlmostEqual(p_td3, 2 / 252)
+        self.assertAlmostEqual(p_ln, 18 / 252)
+        self.assertAlmostEqual(p_ablation, 12 / 252)
 
 
 if __name__ == "__main__":
