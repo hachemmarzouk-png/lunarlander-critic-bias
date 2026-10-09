@@ -1,9 +1,4 @@
-"""Minimal, inspectable DDPG / TD3 implementations.
 
-- Two-timescale targets are Polyak-averaged copies.
-- TD3 adds clipped double-Q, target-policy smoothing and delayed actor steps.
-- DDPG uses one critic with no policy smoothing.
-"""
 from __future__ import annotations
 import copy
 from dataclasses import dataclass
