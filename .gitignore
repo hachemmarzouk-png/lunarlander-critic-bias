@@ -1,0 +1,32 @@
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.DS_Store
+*.pt
+
+# Include the evaluation CSVs in the GitHub repo for paper reproducibility.
+# Exclude machine-local paths in config.json and full training logs by default.
+results/*
+!results/*/
+results/*/*
+!results/*/evaluations.csv
+!results/*/train_episodes.csv
+!results/.gitkeep
+
+# Keep compact numerical summary CSVs; paper/ contains final vector figures.
+figures/*
+!figures/.gitkeep
+!figures/final_by_seed.csv
+!figures/final_summary.csv
+!figures/effects.csv
+!figures/ablation_by_seed.csv
+!figures/ablation_contrasts.csv
+
+# TeX build artifacts
+paper/*.aux
+paper/*.log
+paper/*.fls
+paper/*.fdb_latexmk
+paper/*.xdv
+paper/*.out
