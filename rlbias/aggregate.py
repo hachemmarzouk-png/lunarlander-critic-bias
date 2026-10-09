@@ -1,4 +1,4 @@
-"""Load per-run evaluation CSVs and compute seed-level statistics."""
+
 from __future__ import annotations
 
 from itertools import combinations
