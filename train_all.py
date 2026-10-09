@@ -1,4 +1,4 @@
-"""Train DDPG/TD3 across independent seeds (optional LN placement ablation)."""
+
 from __future__ import annotations
 
 import argparse
