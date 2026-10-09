@@ -1,8 +1,4 @@
-"""Actor and critic multilayer perceptrons with optional LayerNorm.
 
-LayerNorm is inserted after each *hidden* linear layer and before ReLU.
-Its parameters are learned. Outputs are never normalized.
-"""
 from __future__ import annotations
 import torch
 from torch import nn
