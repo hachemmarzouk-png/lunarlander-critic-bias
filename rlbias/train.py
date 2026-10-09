@@ -1,4 +1,4 @@
-"""CLI: train DDPG or TD3 with/without LN, log eval MC bias at checkpoints."""
+
 from __future__ import annotations
 import argparse
 import csv
